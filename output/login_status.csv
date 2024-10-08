@@ -312,3 +312,46 @@ madhan.king51@gmail.com,2024-10-08 19:40:29,Success,
 madhan.king51@gmail.com,2024-10-08 19:40:45,Failed,Could not verify successful login.
 naresh.k.personal@gmail.com,2024-10-08 19:42:40,Success,
 naresh.k.personal@gmail.com,2024-10-08 19:42:57,Failed,Could not verify successful login.
+naresh.k.personal@gmail.com,2024-10-08 19:58:33,Success,
+naresh.k.personal@gmail.com,2024-10-08 20:06:25,Success,
+N/A,2024-10-08 20:07:19,Error,"Unexpected error in main loop: HTTPConnectionPool(host='localhost', port=50689): Max retries exceeded with url: /session/9dfae76b9b263d63c8228a4185b08716/url (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002CE6D0EB440>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))"
+naresh.k.personal@gmail.com,2024-10-08 20:13:34,Failed,Could not verify successful login.
+naresh.k.personal@gmail.com,2024-10-08 20:14:54,Success,
+naresh.k.personal@gmail.com,2024-10-08 20:24:18,Success,
+naresh.k.personal@gmail.com,2024-10-08 20:27:49,Failed,Could not verify successful login.
+naresh.k.personal@gmail.com,2024-10-08 20:28:49,Success,
+naresh.k.personal@gmail.com,2024-10-08 20:31:31,Success,
+madhan.king51@gmail.com,2024-10-08 22:04:09,Failed,Could not verify successful login.
+madhan.king51@gmail.com,2024-10-08 22:05:56,Failed,Could not verify successful login.
+madhan.king51@gmail.com,2024-10-08 22:08:58,Failed,Could not verify successful login.
+madhan.king51@gmail.com,2024-10-08 22:12:12,Success,
+madhan.king51@gmail.com,2024-10-08 22:32:32,Success,
+N/A,2024-10-08 22:36:15,Error,"Unexpected error in main loop: HTTPSConnectionPool(host='www.google.com', port=443): Read timed out. (read timeout=5)"
+madhan.king51@gmail.com,2024-10-08 22:37:48,Failed,Could not verify successful login.
+madhan.king51@gmail.com,2024-10-08 22:39:35,Success,
+madhan.king51@gmail.com,2024-10-08 22:45:19,Success,
+madhan.king51@gmail.com,2024-10-08 22:47:18,Failed,"Login error: Message: no such window: target window already closed
+from unknown error: web view not found
+  (Session info: chrome=129.0.6668.90)
+Stacktrace:
+	GetHandleVerifier [0x00007FF68E96B645+29573]
+	(No symbol) [0x00007FF68E8E0470]
+	(No symbol) [0x00007FF68E79B6EA]
+	(No symbol) [0x00007FF68E76FCD5]
+	(No symbol) [0x00007FF68E81EF67]
+	(No symbol) [0x00007FF68E837FC1]
+	(No symbol) [0x00007FF68E8170A3]
+	(No symbol) [0x00007FF68E7E12DF]
+	(No symbol) [0x00007FF68E7E2441]
+	GetHandleVerifier [0x00007FF68EC9C58D+3375821]
+	GetHandleVerifier [0x00007FF68ECE7987+3684039]
+	GetHandleVerifier [0x00007FF68ECDCDAB+3640043]
+	GetHandleVerifier [0x00007FF68EA2B7C6+816390]
+	(No symbol) [0x00007FF68E8EB77F]
+	(No symbol) [0x00007FF68E8E75A4]
+	(No symbol) [0x00007FF68E8E7740]
+	(No symbol) [0x00007FF68E8D659F]
+	BaseThreadInitThunk [0x00007FF8818A257D+29]
+	RtlUserThreadStart [0x00007FF88356AF08+40]
+"
+madhan.king51@gmail.com,2024-10-08 22:49:16,Success,

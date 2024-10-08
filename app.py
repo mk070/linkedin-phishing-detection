@@ -10,7 +10,6 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from data_scrap import export_linkedin_data
 
 def print_colored(text, color):
     colors = {
@@ -74,6 +73,92 @@ def is_user_logged_in(username):
                     return True
     return False
 
+from selenium.common.exceptions import StaleElementReferenceException
+
+def export_linkedin_data(driver, username):
+    try:
+        # Open LinkedIn Data Export page
+        driver.get("https://www.linkedin.com/mypreferences/d/download-my-data")
+
+        # Switch to the iframe containing the export settings
+        WebDriverWait(driver, 30).until(
+            EC.frame_to_be_available_and_switch_to_it((By.CSS_SELECTOR, "iframe.settings-iframe--frame"))
+        )
+        print_colored("Switched to the iframe containing the data export settings.", "green")
+
+        # Check if the download button is already available
+        try:
+            download_button = WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "button.download-btn"))
+            )
+            print_colored("Download button is already available. Proceeding to download the archive.", "green")
+
+            # Click the download button
+            download_button.click()
+
+            # Wait for the file to be downloaded and save it with the username in the filename
+            time.sleep(15)  # Adjust this delay based on the download speed
+            download_directory = os.path.join(os.getcwd(), 'downloads')
+            os.makedirs(download_directory, exist_ok=True)
+
+            downloaded_file_path = os.path.join(download_directory, f"{username}_LinkedIn_data.zip")
+
+            # Assuming the downloaded file is saved in the default download folder
+            # and we are renaming it to include the username
+            os.rename('default_download_location/LinkedIn_data.zip', downloaded_file_path)
+
+            print_colored(f"Data downloaded and saved as {downloaded_file_path}.", "green")
+            return  # Exit after successful download
+
+        except TimeoutException:
+            print_colored("Download button not found. Proceeding to request a new archive.", "yellow")
+
+        # If no download button, proceed with selecting options and requesting a new archive
+        WebDriverWait(driver, 30).until(
+            EC.presence_of_element_located((By.ID, "fast-file-only"))
+        )
+
+        specific_radio_button = driver.find_element(By.ID, "fast-file-only")
+        driver.execute_script("arguments[0].click();", specific_radio_button)
+        print_colored("Selected the specific radio button.", "green")
+
+        checkboxes = WebDriverWait(driver, 30).until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, "input[type='checkbox']"))
+        )
+
+        for checkbox in checkboxes:
+            if not checkbox.is_selected():
+                driver.execute_script("arguments[0].click();", checkbox)
+
+        print_colored("Selected all data categories for export.", "green")
+
+        request_button = WebDriverWait(driver, 30).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "button.request-archive-btn"))
+        )
+        driver.execute_script("arguments[0].click();", request_button)
+        print_colored("Clicked the 'Request archive' button.", "green")
+
+        WebDriverWait(driver, 600).until(
+            EC.element_to_be_clickable((By.CSS_SELECTOR, "button.download-btn"))
+        )
+        download_button = driver.find_element(By.CSS_SELECTOR, "button.download-btn")
+        driver.execute_script("arguments[0].click();", download_button)
+        print_colored("Data download initiated. Waiting for download to complete...", "green")
+
+        # Saving the downloaded file with the username
+        time.sleep(60)  # Adjust this delay based on the download speed
+        downloaded_file_path = os.path.join(download_directory, f"{username}_LinkedIn_data.zip")
+        os.rename('default_download_location/LinkedIn_data.zip', downloaded_file_path)
+
+    except TimeoutException:
+        print_colored("Timeout while waiting for data export elements. Please check your internet connection and LinkedIn settings.", "red")
+    except Exception as e:
+        print_colored(f"An error occurred during data export: {e}", "red")
+    finally:
+        driver.switch_to.default_content()
+        driver.quit()
+
+# Main loop to handle multiple logins and data export
 while True:
     try:
         with open('credentials.csv', 'r') as file:
@@ -96,7 +181,7 @@ while True:
 
                 driver.get("https://www.linkedin.com/login")
 
-                username_field = WebDriverWait(driver, 10).until(
+                username_field = WebDriverWait(driver, 30).until(
                     EC.presence_of_element_located((By.ID, "username"))
                 )
                 username_field.send_keys(username)
@@ -106,23 +191,7 @@ while True:
                 password_field.send_keys(Keys.RETURN)
 
                 try:
-                    captcha_element = WebDriverWait(driver, 15).until(
-                        EC.presence_of_element_located((By.XPATH, "//input[@id='captcha']"))
-                    )
-                    print_colored(f"Captcha detected for {username}. Waiting for manual completion...", "yellow")
-                    while True:
-                        try:
-                            WebDriverWait(driver, 5).until(
-                                EC.presence_of_element_located((By.CSS_SELECTOR, "img.global-nav__me-photo"))
-                            )
-                            break
-                        except TimeoutException:
-                            pass
-                except TimeoutException:
-                    pass
-
-                try:
-                    WebDriverWait(driver, 15).until(
+                    WebDriverWait(driver, 35).until(
                         EC.presence_of_element_located((By.CSS_SELECTOR, "img.global-nav__me-photo"))
                     )
                     print_colored(f"You are now logged into LinkedIn for {username}!", "green")
@@ -134,7 +203,7 @@ while True:
                     with open(cookie_file, 'wb') as cookiesfile:
                         pickle.dump(cookies, cookiesfile)
 
-                    export_linkedin_data(driver)
+                    export_linkedin_data(driver,username)
 
                 except TimeoutException:
                     print_colored(f"Login failed for {username}: Could not verify the presence of a success indicator.", "red")
