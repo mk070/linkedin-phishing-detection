@@ -19,6 +19,7 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException
 from final_check import analyze_urls
 
+# Print text with a specific color
 def print_colored(text, color):
     colors = {
         "green": "\033[92m",
@@ -28,6 +29,7 @@ def print_colored(text, color):
     }
     print(f"{colors[color]}{text}{colors['reset']}")
 
+# Loading animation with message
 def loading_animation(message):
     print(message, end='', flush=True)
     for _ in range(3):
@@ -35,6 +37,7 @@ def loading_animation(message):
         time.sleep(1)
     print()
 
+# Continuously check internet connection until active
 def check_internet_connection(url="https://www.google.com", timeout=5):
     while True:
         try:
@@ -45,6 +48,7 @@ def check_internet_connection(url="https://www.google.com", timeout=5):
             print_colored("No internet connection. Retrying in 10 seconds...", "yellow")
             time.sleep(10)
 
+# Ensure CSV file has required headers, create the file if not present
 def ensure_csv_headers(file_path, headers):
     file_exists = os.path.exists(file_path)
     if not file_exists or os.path.getsize(file_path) == 0:
@@ -52,20 +56,21 @@ def ensure_csv_headers(file_path, headers):
             writer = csv.writer(file)
             writer.writerow(headers)
 
+# Create output directory and CSV for logging login status
 output_dir = 'output'
 os.makedirs(output_dir, exist_ok=True)
-
 output_csv_path = os.path.join(output_dir, 'login_status.csv')
 required_headers = ['username', 'login_time', 'status', 'error_message']
-
 ensure_csv_headers(output_csv_path, required_headers)
 
+# Log login attempts and status in CSV
 def log_login_status(username, status, error_message=''):
     with open(output_csv_path, 'a', newline='') as file:
         writer = csv.writer(file)
         login_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         writer.writerow([username, login_time, status, error_message])
 
+# Check if user is already logged in by inspecting cookies or previous login records
 def is_user_logged_in(username):
     cookie_file = f"cookies/{username}_cookies.pkl"
     if os.path.exists(cookie_file):
@@ -81,7 +86,7 @@ def is_user_logged_in(username):
                     return True
     return False
 
-# function to check rule-1
+# Check URL for safety, including status code, redirection, and search engine indexing
 def check_url(url, max_redirects=5):
     """Checks a URL for various safety indicators, including redirects, 
     status codes, URL shorteners, domain information, and attempts 
@@ -157,9 +162,9 @@ def check_url(url, max_redirects=5):
     except requests.exceptions.RequestException as e:
         return f"Error checking URL: {e}"
 
+# Extract URLs from the content of a CSV file
 def extract_link(file_path):
-
-
+  
   # Load your CSV file
   df = pd.read_csv(file_path)
 
@@ -180,6 +185,7 @@ def extract_link(file_path):
   # Print the final list of links
   return flat_list
 
+# Export LinkedIn data and perform URL analysis
 def export_linkedin_data(driver, username):
     try:
         # Open LinkedIn Data Export page
@@ -253,17 +259,19 @@ def export_linkedin_data(driver, username):
                     print('Links from msg:')
                     for link in msg_links:
                         print(link)
-                    
-                    
+
+                    print("------- Analyzing the URLs from msg ------- ")
                     # Analyzing the URLs and getting the DataFrame
                     url_scores_df = analyze_urls(msg_links)
+                    print("url_scores_df:\n", url_scores_df)
 
-                    # # Save the DataFrame to an Excel file
-                    output_file = "url_analysis_results.xlsx"
-                    url_scores_df.to_excel(output_file, index=False)
-
-
-                    print(f"Results have been saved to {output_file}")
+                    # Save the DataFrame to an Excel file
+                    output_file = os.path.abspath("url_analysis_results.xlsx")
+                    try:
+                        url_scores_df.to_excel(output_file, index=False)
+                        print(f"Results have been saved to {output_file}")
+                    except Exception as e:
+                        print(f"An error occurred while saving the Excel file: {e}")
 
                 else:
                     print_colored(f"Downloaded file not found in {download_directory} within the timeout period. Please check the download location.", "red")
@@ -332,6 +340,8 @@ while True:
 
             try:
                 loading_animation(f"Logging in for {username}... ")
+                
+                # here we process the login funtion with 2 two-factor
 
                 driver.get("https://www.linkedin.com/login")
 
