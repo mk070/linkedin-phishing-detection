@@ -1,8 +1,12 @@
 import os
+import pandas as pd
+import re
 import shutil
 import zipfile
 import csv
 import requests
+from urllib.parse import urlparse
+import socket
 import time
 import pickle
 from datetime import datetime
@@ -12,7 +16,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
-from selenium.common.exceptions import StaleElementReferenceException
+from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException
 
 def print_colored(text, color):
     colors = {
@@ -76,6 +80,105 @@ def is_user_logged_in(username):
                     return True
     return False
 
+# function to check rule-1
+def check_url(url, max_redirects=5):
+    """Checks a URL for various safety indicators, including redirects, 
+    status codes, URL shorteners, domain information, and attempts 
+    a basic search engine indexing check (unreliable).
+
+    Args:
+        url: The URL to check.
+        max_redirects: Maximum number of redirects to follow.
+
+    Returns:
+        str: A message indicating whether the URL appears safe or suspicious 
+             along with a brief explanation. 
+    """
+    try:
+        response = requests.get(url, allow_redirects=True, timeout=5)
+
+        print(f"URL: {url}")
+
+        # --- Redirection Check ---
+        if response.history:
+            print(f"Request was redirected {len(response.history)} times:")
+            for i, resp in enumerate(response.history):
+                print(f"  {i+1}. Status: {resp.status_code}, URL: {resp.url}")
+            print(f"Final Destination: Status: {response.status_code}, URL: {response.url}")
+        else:
+            print(f"Request was not redirected: Status: {response.status_code}, URL: {response.url}")
+
+        # --- Basic Safety Checks ---
+        safety_concerns = []
+
+        # 1. Status Code Check
+        if response.status_code not in [200, 301, 302]:
+            safety_concerns.append(f"Unusual status code: {response.status_code}")
+
+        # 2. URL Shortener Check (not foolproof)
+        shorteners = ["bit.ly", "tinyurl.com", "ow.ly", "goo.gl"] 
+        if any(shortener in response.url for shortener in shorteners):
+            safety_concerns.append("URL uses a URL shortening service.")
+
+        # 3. Domain Information
+        try:
+            parsed_url = urlparse(response.url)
+            ip_address = socket.gethostbyname(parsed_url.hostname)
+            print(f"IP Address: {ip_address}") 
+        except socket.gaierror:
+            safety_concerns.append("Unable to resolve domain to IP address.")
+
+        # --- Search Engine Indexing Check (Unreliable) ---
+        search_engines = ["https://www.google.com/search?q=site:",
+                          "https://search.yahoo.com/search?p=site:",
+                          "https://www.bing.com/search?q=site:"]
+
+        for engine in search_engines:
+            search_url = f"{engine}{parsed_url.netloc}"
+            try:
+                response = requests.get(search_url, headers={'User-Agent': 'Mozilla/5.0'})
+                if response.status_code == 200:
+                    if url in response.text: 
+                        print(f"URL found in index of: {engine}") 
+                    else:
+                        print(f"URL not found in initial results of: {engine}")
+                else:
+                    print(f"Error checking {engine}: Status code {response.status_code}")
+            except Exception as e:
+                print(f"Error checking {engine}: {e}")
+
+        # --- Safety Assessment Message ---
+        if safety_concerns:
+            return f"Suspicious URL! Concerns:\n  - {'; '.join(safety_concerns)}"
+        else:
+            return "This URL appears safe to proceed with, but exercise caution."
+
+    except requests.exceptions.RequestException as e:
+        return f"Error checking URL: {e}"
+
+def extract_link(file_path):
+
+
+  # Load your CSV file
+  df = pd.read_csv(file_path)
+
+  # Function to extract usernames and links from the 'CONTENT' column
+  def extract_usernames_links(content):
+      # Regex pattern to capture any URL in the content
+      pattern = r'(https?://[^\s<>"\']+)'
+      matches = re.findall(pattern, content)
+      return matches
+
+  # Apply the function to the 'CONTENT' column
+  df['USERNAMES_AND_LINKS'] = df['CONTENT'].apply(lambda x: extract_usernames_links(str(x)))
+
+  # Filter out empty lists
+  links = [link for link in df['USERNAMES_AND_LINKS'] if link]
+  flat_list = [link for sublist in links for link in sublist]
+
+  # Print the final list of links
+  return flat_list
+
 def export_linkedin_data(driver, username):
     try:
         # Open LinkedIn Data Export page
@@ -87,61 +190,78 @@ def export_linkedin_data(driver, username):
         )
         print_colored("Switched to the iframe containing the data export settings.", "green")
 
-        # Check if the download button is already available
+        # Wait for the download button to become clickable
         try:
-            download_button = WebDriverWait(driver, 10).until(
-                EC.presence_of_element_located((By.CSS_SELECTOR, "button.download-btn"))
+            WebDriverWait(driver, 600).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "button.download-btn"))
             )
-            print_colored("Download button is already available. Proceeding to download the archive.", "green")
+            download_button = driver.find_element(By.CSS_SELECTOR, "button.download-btn")
 
-            # Click the download button
-            download_button.click()
+            # Ensure that the button is not disabled
+            if download_button.is_enabled():
+                print_colored("Download button is already available. Proceeding to download the archive.", "green")
 
-            # Wait for the download to complete
-            download_directory = os.path.join(os.getcwd(), 'downloaded_files')
-            print_colored(f"Checking download directory: {download_directory}", "green")
+                # Click the download button
+                driver.execute_script("arguments[0].click();", download_button)
 
-            # Wait for the downloaded file to appear in the download directory
-            timeout = 300  # Set a maximum wait time of 5 minutes
-            polling_interval = 5  # Check every 5 seconds
-            elapsed_time = 0
-            downloaded_file = None
+                # Wait for the download to complete
+                download_directory = os.path.join(os.getcwd(), 'downloaded_files')
+                print_colored(f"Checking download directory: {download_directory}", "green")
 
-            while elapsed_time < timeout:
-                for file in os.listdir(download_directory):
-                    if file.endswith('.zip'):
-                        downloaded_file = os.path.join(download_directory, file)
+                # Wait for the downloaded file to appear in the download directory
+                timeout = 600  # Set a maximum wait time of 10 minutes
+                polling_interval = 10  # Check every 10 seconds
+                elapsed_time = 0
+                downloaded_file = None
+
+                while elapsed_time < timeout:
+                    for file in os.listdir(download_directory):
+                        if file.endswith('.zip'):
+                            downloaded_file = os.path.join(download_directory, file)
+                            break
+
+                    if downloaded_file and os.path.exists(downloaded_file):
+                        print_colored(f"Found downloaded file: {downloaded_file}", "green")
                         break
+                    else:
+                        time.sleep(polling_interval)
+                        elapsed_time += polling_interval
+                        print_colored(f"Waiting for the file to download... {elapsed_time} seconds elapsed.", "yellow")
 
                 if downloaded_file and os.path.exists(downloaded_file):
-                    print_colored(f"Found downloaded file: {downloaded_file}", "green")
-                    break
+                    output_directory = os.path.join(os.getcwd(), 'downloads')
+                    os.makedirs(output_directory, exist_ok=True)
+
+                    # Create the new file path using the username
+                    new_file_path = os.path.join(output_directory, f"{username}_LinkedIn_data.zip")
+                    shutil.move(downloaded_file, new_file_path)
+                    print_colored(f"Data downloaded and saved as {new_file_path}.", "green")
+
+                    # Unzip the downloaded file and store it in output\user_data\{username} folder
+                    unzip_directory = os.path.join(os.getcwd(), 'output', 'user_data', username)
+                    os.makedirs(unzip_directory, exist_ok=True)
+
+                    with zipfile.ZipFile(new_file_path, 'r') as zip_ref:
+                        zip_ref.extractall(unzip_directory)
+                    print_colored(f"Data extracted to {unzip_directory}.", "green")
+                    csv_file_path = os.path.join(unzip_directory, 'messages.csv')
+                    print("CSV file path: ", csv_file_path)
+
+                    msg_links = extract_link(csv_file_path)
+                    print('LInks from msg : ', msg_links) # extract_link
+
+                    for someurl in msg_links:
+                        assessment = check_url(someurl)
+                        print(assessment) 
+                        print("-" * 40)
                 else:
-                    time.sleep(polling_interval)
-                    elapsed_time += polling_interval
-                    print_colored(f"Waiting for the file to download... {elapsed_time} seconds elapsed.", "yellow")
+                    print_colored(f"Downloaded file not found in {download_directory} within the timeout period. Please check the download location.", "red")
 
-            if downloaded_file and os.path.exists(downloaded_file):
-                output_directory = os.path.join(os.getcwd(), 'downloads')
-                os.makedirs(output_directory, exist_ok=True)
-
-                # Create the new file path using the username
-                new_file_path = os.path.join(output_directory, f"{username}_LinkedIn_data.zip")
-                shutil.move(downloaded_file, new_file_path)
-                print_colored(f"Data downloaded and saved as {new_file_path}.", "green")
-
-                # Unzip the downloaded file and store it in output\user_data\{username} folder
-                unzip_directory = os.path.join(os.getcwd(), 'output', 'user_data', username)
-                os.makedirs(unzip_directory, exist_ok=True)
-
-                with zipfile.ZipFile(new_file_path, 'r') as zip_ref:
-                    zip_ref.extractall(unzip_directory)
-                print_colored(f"Data extracted to {unzip_directory}.", "green")
             else:
-                print_colored(f"Downloaded file not found in {download_directory} within the timeout period. Please check the download location.", "red")
+                print_colored("Download button is disabled. Please wait until it becomes active or request a new archive.", "red")
 
-        except TimeoutException:
-            print_colored("Download button not found. Proceeding to request a new archive.", "yellow")
+        except (TimeoutException, ElementClickInterceptedException) as e:
+            print_colored(f"Encountered an issue: {e}. Attempting to request a new archive.", "yellow")
 
             # Request a new archive if the download button is not available
             specific_radio_button = WebDriverWait(driver, 30).until(
@@ -155,10 +275,10 @@ def export_linkedin_data(driver, username):
             )
 
             for checkbox in checkboxes:
-                if not checkbox.is_selected():
+                if checkbox.get_attribute('id') == "file_group_INBOX" and not checkbox.is_selected():
                     driver.execute_script("arguments[0].click();", checkbox)
 
-            print_colored("Selected all data categories for export.", "green")
+            print_colored("Selected only the 'Messages' data category for export.", "green")
 
             request_button = WebDriverWait(driver, 30).until(
                 EC.element_to_be_clickable((By.CSS_SELECTOR, "button.request-archive-btn"))

@@ -468,3 +468,89 @@ Stacktrace:
 	RtlUserThreadStart [0x00007FF88356AF08+40]
 "
 madhan.king51@gmail.com,2024-10-09 09:53:46,Success,
+harishrajd6@gmail.com,2024-10-09 11:41:58,Success,
+harishrajd6@gmail.com,2024-10-09 11:42:19,Failed,"Login error: Message: no such window: target window already closed
+from unknown error: web view not found
+  (Session info: chrome=129.0.6668.90)
+Stacktrace:
+	GetHandleVerifier [0x00007FF68E96B645+29573]
+	(No symbol) [0x00007FF68E8E0470]
+	(No symbol) [0x00007FF68E79B6EA]
+	(No symbol) [0x00007FF68E76FCD5]
+	(No symbol) [0x00007FF68E81EF67]
+	(No symbol) [0x00007FF68E837FC1]
+	(No symbol) [0x00007FF68E8170A3]
+	(No symbol) [0x00007FF68E7E12DF]
+	(No symbol) [0x00007FF68E7E2441]
+	GetHandleVerifier [0x00007FF68EC9C58D+3375821]
+	GetHandleVerifier [0x00007FF68ECE7987+3684039]
+	GetHandleVerifier [0x00007FF68ECDCDAB+3640043]
+	GetHandleVerifier [0x00007FF68EA2B7C6+816390]
+	(No symbol) [0x00007FF68E8EB77F]
+	(No symbol) [0x00007FF68E8E75A4]
+	(No symbol) [0x00007FF68E8E7740]
+	(No symbol) [0x00007FF68E8D659F]
+	BaseThreadInitThunk [0x00007FF8818A257D+29]
+	RtlUserThreadStart [0x00007FF88356AF08+40]
+"
+skakalya10@gmail.com,2024-10-09 11:49:59,Success,
+madhan.king51@gmail.com,2024-10-09 11:54:22,Success,
+madhan.king51@gmail.com,2024-10-09 11:56:15,Failed,Could not verify successful login.
+madhan.king51@gmail.com,2024-10-09 11:57:17,Success,
+madhan.king51@gmail.com,2024-10-09 12:01:20,Success,
+madhan.king51@gmail.com,2024-10-09 12:12:07,Failed,"Login error: Message: no such window: target window already closed
+from unknown error: web view not found
+  (Session info: chrome=129.0.6668.90)
+Stacktrace:
+	GetHandleVerifier [0x00007FF68E96B645+29573]
+	(No symbol) [0x00007FF68E8E0470]
+	(No symbol) [0x00007FF68E79B6EA]
+	(No symbol) [0x00007FF68E76FCD5]
+	(No symbol) [0x00007FF68E81EF67]
+	(No symbol) [0x00007FF68E837FC1]
+	(No symbol) [0x00007FF68E8170A3]
+	(No symbol) [0x00007FF68E7E12DF]
+	(No symbol) [0x00007FF68E7E2441]
+	GetHandleVerifier [0x00007FF68EC9C58D+3375821]
+	GetHandleVerifier [0x00007FF68ECE7987+3684039]
+	GetHandleVerifier [0x00007FF68ECDCDAB+3640043]
+	GetHandleVerifier [0x00007FF68EA2B7C6+816390]
+	(No symbol) [0x00007FF68E8EB77F]
+	(No symbol) [0x00007FF68E8E75A4]
+	(No symbol) [0x00007FF68E8E7740]
+	(No symbol) [0x00007FF68E8D659F]
+	BaseThreadInitThunk [0x00007FF8818A257D+29]
+	RtlUserThreadStart [0x00007FF88356AF08+40]
+"
+madhan.king51@gmail.com,2024-10-09 12:17:50,Success,
+madhan.king51@gmail.com,2024-10-09 12:21:15,Success,
+madhan.king51@gmail.com,2024-10-09 12:23:03,Success,
+madhan.king51@gmail.com,2024-10-09 12:38:41,Failed,Could not verify successful login.
+madhan.king51@gmail.com,2024-10-09 12:39:40,Success,
+skakalya10@gmail.com,2024-10-09 12:43:33,Success,
+madhan.king51@gmail.com,2024-10-09 13:03:34,Success,
+madhan.king51@gmail.com,2024-10-09 13:06:40,Success,
+madhan.king51@gmail.com,2024-10-09 13:07:28,Failed,"Login error: Message: no such window: target window already closed
+from unknown error: web view not found
+  (Session info: chrome=129.0.6668.90)
+Stacktrace:
+	GetHandleVerifier [0x00007FF68E96B645+29573]
+	(No symbol) [0x00007FF68E8E0470]
+	(No symbol) [0x00007FF68E79B6EA]
+	(No symbol) [0x00007FF68E76FCD5]
+	(No symbol) [0x00007FF68E81EF67]
+	(No symbol) [0x00007FF68E837FC1]
+	(No symbol) [0x00007FF68E8170A3]
+	(No symbol) [0x00007FF68E7E12DF]
+	(No symbol) [0x00007FF68E7E2441]
+	GetHandleVerifier [0x00007FF68EC9C58D+3375821]
+	GetHandleVerifier [0x00007FF68ECE7987+3684039]
+	GetHandleVerifier [0x00007FF68ECDCDAB+3640043]
+	GetHandleVerifier [0x00007FF68EA2B7C6+816390]
+	(No symbol) [0x00007FF68E8EB77F]
+	(No symbol) [0x00007FF68E8E75A4]
+	(No symbol) [0x00007FF68E8E7740]
+	(No symbol) [0x00007FF68E8D659F]
+	BaseThreadInitThunk [0x00007FF8818A257D+29]
+	RtlUserThreadStart [0x00007FF88356AF08+40]
+"
