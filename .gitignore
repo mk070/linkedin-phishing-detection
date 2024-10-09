@@ -2,3 +2,6 @@ downloaded_files
 
 .env
 cookies
+*.zip
+*.csv
+user_data

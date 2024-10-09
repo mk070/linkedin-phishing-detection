@@ -1,4 +1,6 @@
 import os
+import shutil
+import zipfile
 import csv
 import requests
 import time
@@ -10,6 +12,7 @@ from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
+from selenium.common.exceptions import StaleElementReferenceException
 
 def print_colored(text, color):
     colors = {
@@ -73,8 +76,6 @@ def is_user_logged_in(username):
                     return True
     return False
 
-from selenium.common.exceptions import StaleElementReferenceException
-
 def export_linkedin_data(driver, username):
     try:
         # Open LinkedIn Data Export page
@@ -96,59 +97,81 @@ def export_linkedin_data(driver, username):
             # Click the download button
             download_button.click()
 
-            # Wait for the file to be downloaded and save it with the username in the filename
-            time.sleep(15)  # Adjust this delay based on the download speed
-            download_directory = os.path.join(os.getcwd(), 'downloads')
-            os.makedirs(download_directory, exist_ok=True)
+            # Wait for the download to complete
+            download_directory = os.path.join(os.getcwd(), 'downloaded_files')
+            print_colored(f"Checking download directory: {download_directory}", "green")
 
-            downloaded_file_path = os.path.join(download_directory, f"{username}_LinkedIn_data.zip")
+            # Wait for the downloaded file to appear in the download directory
+            timeout = 300  # Set a maximum wait time of 5 minutes
+            polling_interval = 5  # Check every 5 seconds
+            elapsed_time = 0
+            downloaded_file = None
 
-            # Assuming the downloaded file is saved in the default download folder
-            # and we are renaming it to include the username
-            os.rename('default_download_location/LinkedIn_data.zip', downloaded_file_path)
+            while elapsed_time < timeout:
+                for file in os.listdir(download_directory):
+                    if file.endswith('.zip'):
+                        downloaded_file = os.path.join(download_directory, file)
+                        break
 
-            print_colored(f"Data downloaded and saved as {downloaded_file_path}.", "green")
-            return  # Exit after successful download
+                if downloaded_file and os.path.exists(downloaded_file):
+                    print_colored(f"Found downloaded file: {downloaded_file}", "green")
+                    break
+                else:
+                    time.sleep(polling_interval)
+                    elapsed_time += polling_interval
+                    print_colored(f"Waiting for the file to download... {elapsed_time} seconds elapsed.", "yellow")
+
+            if downloaded_file and os.path.exists(downloaded_file):
+                output_directory = os.path.join(os.getcwd(), 'downloads')
+                os.makedirs(output_directory, exist_ok=True)
+
+                # Create the new file path using the username
+                new_file_path = os.path.join(output_directory, f"{username}_LinkedIn_data.zip")
+                shutil.move(downloaded_file, new_file_path)
+                print_colored(f"Data downloaded and saved as {new_file_path}.", "green")
+
+                # Unzip the downloaded file and store it in output\user_data\{username} folder
+                unzip_directory = os.path.join(os.getcwd(), 'output', 'user_data', username)
+                os.makedirs(unzip_directory, exist_ok=True)
+
+                with zipfile.ZipFile(new_file_path, 'r') as zip_ref:
+                    zip_ref.extractall(unzip_directory)
+                print_colored(f"Data extracted to {unzip_directory}.", "green")
+            else:
+                print_colored(f"Downloaded file not found in {download_directory} within the timeout period. Please check the download location.", "red")
 
         except TimeoutException:
             print_colored("Download button not found. Proceeding to request a new archive.", "yellow")
 
-        # If no download button, proceed with selecting options and requesting a new archive
-        WebDriverWait(driver, 30).until(
-            EC.presence_of_element_located((By.ID, "fast-file-only"))
-        )
+            # Request a new archive if the download button is not available
+            specific_radio_button = WebDriverWait(driver, 30).until(
+                EC.presence_of_element_located((By.ID, "fast-file-only"))
+            )
+            driver.execute_script("arguments[0].click();", specific_radio_button)
+            print_colored("Selected the specific radio button.", "green")
 
-        specific_radio_button = driver.find_element(By.ID, "fast-file-only")
-        driver.execute_script("arguments[0].click();", specific_radio_button)
-        print_colored("Selected the specific radio button.", "green")
+            checkboxes = WebDriverWait(driver, 30).until(
+                EC.presence_of_all_elements_located((By.CSS_SELECTOR, "input[type='checkbox']"))
+            )
 
-        checkboxes = WebDriverWait(driver, 30).until(
-            EC.presence_of_all_elements_located((By.CSS_SELECTOR, "input[type='checkbox']"))
-        )
+            for checkbox in checkboxes:
+                if not checkbox.is_selected():
+                    driver.execute_script("arguments[0].click();", checkbox)
 
-        for checkbox in checkboxes:
-            if not checkbox.is_selected():
-                driver.execute_script("arguments[0].click();", checkbox)
+            print_colored("Selected all data categories for export.", "green")
 
-        print_colored("Selected all data categories for export.", "green")
+            request_button = WebDriverWait(driver, 30).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "button.request-archive-btn"))
+            )
+            driver.execute_script("arguments[0].click();", request_button)
+            print_colored("Clicked the 'Request archive' button.", "green")
 
-        request_button = WebDriverWait(driver, 30).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "button.request-archive-btn"))
-        )
-        driver.execute_script("arguments[0].click();", request_button)
-        print_colored("Clicked the 'Request archive' button.", "green")
-
-        WebDriverWait(driver, 600).until(
-            EC.element_to_be_clickable((By.CSS_SELECTOR, "button.download-btn"))
-        )
-        download_button = driver.find_element(By.CSS_SELECTOR, "button.download-btn")
-        driver.execute_script("arguments[0].click();", download_button)
-        print_colored("Data download initiated. Waiting for download to complete...", "green")
-
-        # Saving the downloaded file with the username
-        time.sleep(60)  # Adjust this delay based on the download speed
-        downloaded_file_path = os.path.join(download_directory, f"{username}_LinkedIn_data.zip")
-        os.rename('default_download_location/LinkedIn_data.zip', downloaded_file_path)
+            WebDriverWait(driver, 600).until(
+                EC.element_to_be_clickable((By.CSS_SELECTOR, "button.download-btn"))
+            )
+            download_button = driver.find_element(By.CSS_SELECTOR, "button.download-btn")
+            driver.execute_script("arguments[0].click();", download_button)
+            print_colored("Data download initiated. Waiting for download to complete...", "green")
 
     except TimeoutException:
         print_colored("Timeout while waiting for data export elements. Please check your internet connection and LinkedIn settings.", "red")
