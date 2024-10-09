@@ -6,3 +6,6 @@ cookies
 *.csv
 user_data
 readme.md
+downloaded_files
+test
+data_scrapy.py
