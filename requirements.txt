@@ -4,3 +4,4 @@ flask
 pandas
 seleniumbase
 selenium
+openpyxl

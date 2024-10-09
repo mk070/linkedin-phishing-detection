@@ -17,6 +17,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException
 from selenium.common.exceptions import TimeoutException, ElementClickInterceptedException
+from final_check import analyze_urls
 
 def print_colored(text, color):
     colors = {
@@ -248,12 +249,22 @@ def export_linkedin_data(driver, username):
                     print("CSV file path: ", csv_file_path)
 
                     msg_links = extract_link(csv_file_path)
-                    print('LInks from msg : ', msg_links) # extract_link
+                    # Print each link one by one
+                    print('Links from msg:')
+                    for link in msg_links:
+                        print(link)
+                    
+                    
+                    # Analyzing the URLs and getting the DataFrame
+                    url_scores_df = analyze_urls(msg_links)
 
-                    for someurl in msg_links:
-                        assessment = check_url(someurl)
-                        print(assessment) 
-                        print("-" * 40)
+                    # # Save the DataFrame to an Excel file
+                    output_file = "url_analysis_results.xlsx"
+                    url_scores_df.to_excel(output_file, index=False)
+
+
+                    print(f"Results have been saved to {output_file}")
+
                 else:
                     print_colored(f"Downloaded file not found in {download_directory} within the timeout period. Please check the download location.", "red")
 
