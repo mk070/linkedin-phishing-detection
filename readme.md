@@ -24,7 +24,7 @@ This project automates the detection of phishing URLs from LinkedIn messages and
 ├── url_analyser.py              # Custom URL analysis module.
 ├── app.py                       # Main script for running the project.
 ├── README.md                    # Project documentation.
-
+```
 
 ## How It Works
 
