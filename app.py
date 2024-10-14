@@ -42,14 +42,6 @@ def check_internet_connection(url="https://www.google.com", timeout=5):
             print_colored("No internet connection. Retrying in 10 seconds...", "yellow")
             time.sleep(10)
 
-# Ensure CSV file has required headers, create the file if not present
-def ensure_csv_headers(file_path, headers):
-    file_exists = os.path.exists(file_path)
-    if not file_exists or os.path.getsize(file_path) == 0:
-        with open(file_path, 'w', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(headers)
-
 # Extract URLs from the content of a CSV file
 def extract_link(file_path):
     df = pd.read_csv(file_path)
@@ -82,8 +74,6 @@ def log_processed_file(file_name, log_file='processed_files.log'):
 
 # Main function to handle processing of input CSV files and analysis
 def process_csv_files():
-    processed_files = get_processed_csv_files()
-
     # Create output directory
     output_dir = 'output'
     os.makedirs(output_dir, exist_ok=True)
@@ -94,17 +84,24 @@ def process_csv_files():
             # Check internet connection before proceeding
             check_internet_connection()
 
+            # Get the list of already processed files
+            processed_files = get_processed_csv_files()
+
             # Get all CSV files in the input folder
             input_folder = 'input'
-            csv_files = [f for f in os.listdir(input_folder) if f.endswith('.csv') and f not in processed_files]
+            csv_files = [f for f in os.listdir(input_folder) if f.endswith('.csv')]
 
             if not csv_files:
-                print_colored("No new CSV files to process. Waiting for new files...", "yellow")
+                print_colored("No CSV files to process. Waiting for new files...", "yellow")
                 time.sleep(30)
                 continue
 
             # Process each new CSV file
             for csv_file in csv_files:
+                if csv_file in processed_files:
+                    print_colored(f"File {csv_file} has already been processed. Skipping...", "yellow")
+                    continue
+
                 csv_file_path = os.path.join(input_folder, csv_file)
                 print_colored(f"\n{'=' * 50}\nProcessing CSV file: {csv_file_path}\n{'=' * 50}", "green")
 
@@ -139,7 +136,7 @@ def process_csv_files():
                     url_scores_df = analyze_urls(msg_links)
 
                     # Save results to Excel
-                    output_file = os.path.abspath(os.path.join(output_dir, f"{csv_file.replace('.csv', '')}_url_analysis_results.xlsx"))
+                    output_file = os.path.abspath(os.path.join(output_dir, f"{os.path.splitext(csv_file)[0]}_url_analysis_results.xlsx"))
                     url_scores_df.to_excel(output_file, index=False)
                     print_colored(f"Results have been saved to {output_file}", "green")
 
