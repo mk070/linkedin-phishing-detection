@@ -3,7 +3,6 @@ import threading
 import pandas as pd
 import re
 import time
-import csv
 import requests
 from urllib.parse import urlparse
 from url_analyser import analyze_urls
@@ -29,7 +28,6 @@ def loading_animation(message, stop_event):
             time.sleep(1)
         print('\r', end='', flush=True)  # Carriage return to overwrite previous animation
     print()  # Print a new line when animation stops
-
 
 # Check internet connection continuously until active
 def check_internet_connection(url="https://www.google.com", timeout=5):
@@ -59,18 +57,19 @@ def extract_link(file_path):
     links = [link for sublist in df['USERNAMES_AND_LINKS'] for link in sublist]
     return links
 
-# Track already processed CSV files to avoid reprocessing
-def get_processed_csv_files(log_file='processed_files.log'):
+# Load already processed URLs for a specific CSV file
+def load_processed_urls(log_file):
     if not os.path.exists(log_file):
         return set()
     
     with open(log_file, 'r') as file:
-        processed_files = file.read().splitlines()
-    return set(processed_files)
+        processed_urls = file.read().splitlines()
+    return set(processed_urls)
 
-def log_processed_file(file_name, log_file='processed_files.log'):
+# Save processed URLs as they are completed
+def log_processed_url(url, log_file):
     with open(log_file, 'a') as file:
-        file.write(file_name + '\n')
+        file.write(url + '\n')
 
 # Main function to handle processing of input CSV files and analysis
 def process_csv_files():
@@ -84,9 +83,6 @@ def process_csv_files():
             # Check internet connection before proceeding
             check_internet_connection()
 
-            # Get the list of already processed files
-            processed_files = get_processed_csv_files()
-
             # Get all CSV files in the input folder
             input_folder = 'input'
             csv_files = [f for f in os.listdir(input_folder) if f.endswith('.csv')]
@@ -98,12 +94,13 @@ def process_csv_files():
 
             # Process each new CSV file
             for csv_file in csv_files:
-                if csv_file in processed_files:
-                    print_colored(f"File {csv_file} has already been processed. Skipping...", "yellow")
-                    continue
-
                 csv_file_path = os.path.join(input_folder, csv_file)
+                log_file = os.path.join(output_dir, f"{os.path.splitext(csv_file)[0]}_processed_urls.log")
                 print_colored(f"\n{'=' * 50}\nProcessing CSV file: {csv_file_path}\n{'=' * 50}", "green")
+
+                # Load already processed URLs
+                processed_urls = load_processed_urls(log_file)
+                print_colored(f"Loaded {len(processed_urls)} previously processed URLs.", "yellow")
 
                 # Set up the stop event for the animation
                 stop_event = threading.Event()
@@ -113,10 +110,10 @@ def process_csv_files():
                 animation_thread.start()
 
                 try:
+                    # Extract URLs from the CSV file
                     msg_links = extract_link(csv_file_path)
                     if not msg_links:
                         print_colored("No URLs found in the CSV. Skipping this file...", "red")
-                        log_processed_file(csv_file)
                         stop_event.set()  # Stop the animation
                         animation_thread.join()
                         continue
@@ -131,22 +128,38 @@ def process_csv_files():
 
                     animation_thread = threading.Thread(target=loading_animation, args=("Analyzing URLs from CSV", stop_event))
                     animation_thread.start()
-                    
-                    # Analyze URLs
-                    url_scores_df = analyze_urls(msg_links)
 
-                    # Save results to Excel
+                    # Initialize an empty DataFrame to store the analysis results
                     output_file = os.path.abspath(os.path.join(output_dir, f"{os.path.splitext(csv_file)[0]}_url_analysis_results.xlsx"))
-                    url_scores_df.to_excel(output_file, index=False)
-                    print_colored(f"Results have been saved to {output_file}", "green")
+                    url_scores_df = pd.DataFrame()
 
-                    # Stop the animation after processing is complete
-                    stop_event.set()
-                    animation_thread.join()
+                    # Analyze each URL one by one and update the Excel file in real-time
+                    for i, link in enumerate(msg_links):
+                        # Skip URLs that have already been processed
+                        if link in processed_urls:
+                            print_colored(f"URL {i+1}/{len(msg_links)} already processed: {link}", "yellow")
+                            continue
+
+                        print_colored(f"Analyzing URL {i+1}/{len(msg_links)}: {link}", "yellow")
+                        
+                        # Analyze the URL
+                        result_df = analyze_urls([link])  # This returns a DataFrame with columns from analyze_urls
+
+                        # Append the result to the DataFrame
+                        url_scores_df = pd.concat([url_scores_df, result_df], ignore_index=True)
+
+                        # Save the updated results to the Excel file
+                        url_scores_df.to_excel(output_file, index=False)
+                        print_colored(f"URL {i+1} has been analyzed and results updated.", "green")
+
+                        # Log the processed URL
+                        log_processed_url(link, log_file)
+                        processed_urls.add(link)  # Update the in-memory set as well
+
+                    print_colored(f"\n{'=' * 50}\nAll URLs from {csv_file} have been analyzed.\nResults saved to {output_file}\n{'=' * 50}", "green")
 
                 finally:
-                    # Mark file as processed
-                    log_processed_file(csv_file)
+                    # Stop the animation after processing is complete
                     stop_event.set()
                     animation_thread.join()
 

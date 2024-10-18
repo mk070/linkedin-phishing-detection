@@ -11,3 +11,4 @@ test
 data_scrapy.py
 .log
 url_analysis_results.xlsx
+messages*
