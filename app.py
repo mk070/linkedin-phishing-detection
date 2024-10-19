@@ -81,7 +81,7 @@ def process_csv_files():
     while True:
         try:
             # Check internet connection before proceeding
-            check_internet_connection()
+            # check_internet_connection()
 
             # Get all CSV files in the input folder
             input_folder = 'input'
